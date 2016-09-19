@@ -11,10 +11,13 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 class GameServiceSpec extends FunSuite {
 
 
-  implicit val system = ActorSystem("test")
-  implicit val materializer = ActorMaterializer()
+  implicit var system = ActorSystem("test")
+  implicit var materializer = ActorMaterializer()
 
   def getFlow = {
+    system.terminate()
+    system = ActorSystem("test")
+    materializer = ActorMaterializer()
     new GameService().handleMsg("andrew")
   }
 

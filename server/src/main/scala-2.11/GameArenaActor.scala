@@ -14,19 +14,19 @@ class GameArenaActor extends Actor {
 
   override def receive: Receive = {
     case msg@PlayerJoined(name, actor) => {
-      println(msg)
+      println(s"GameArenaActor: $msg\n")
       playerPositions += Player(name, PositionCalculator.findClosestAvailable(Position(0, 0), takenPositions))
       playersEndpoints += (name -> actor)
       notifyOtherPlayers()
     }
     case msg@PlayerLeft(name) => {
-      println(msg)
+      println(s"GameArenaActor: $msg\n")
       playerPositions.remove(playerPositions.indexOf(playerPositions.find(_.name == name).get))
       playersEndpoints.remove(name)
       notifyOtherPlayers()
     }
     case msg@PlayerRequestedMove(name, direction) => {
-      println(msg)
+      println(s"GameArenaActor: $msg\n")
       val (xDiff, yDiff) = direction match {
         case "up" => (0, -1)
         case "down" => (0, 1)
