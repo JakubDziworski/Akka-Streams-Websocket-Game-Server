@@ -13,13 +13,11 @@ object Server extends App with Directives {
   implicit val materializer = ActorMaterializer()
   val gameService = new GameService(system)
 
-  val name = StdIn.readLine("What is your name?\n")
-
-  val route = get {
-    handleWebSocketMessages(gameService.flow(name))
+  val route = (get & parameter("name")) { playerName =>
+    handleWebSocketMessages(gameService.flow(playerName))
   }
 
-  val bindingFuture = Http().bindAndHandle(route,"localhost",9005)
+  val bindingFuture = Http().bindAndHandle(route,"localhost",8080)
 
   StdIn.readLine("server running. press return to stop server")
 

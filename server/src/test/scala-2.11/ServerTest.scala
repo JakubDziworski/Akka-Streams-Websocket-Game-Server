@@ -40,14 +40,14 @@ class ServerTest extends FunSuite with Directives with ScalatestRouteTest with M
 
       client.expectMessage("""[{"name":"Jacob","position":{"x":0,"y":0}}]""")
 
-      client.sendMessage("""move {"x":0,"y":1}""")
-      client.expectMessage("""[{"name":"Jacob","position":{"x":0,"y":1}}]""")
+      client.sendMessage("up")
+      client.sendMessage("left")
+      client.sendMessage("""down""")
+      client.expectMessage("""[{"name":"Jacob","position":{"x":0,"y":-1}}]""")
 
-      client.sendMessage("""move {"x":-1,"y":1}""")
-      client.expectMessage("""[{"name":"Jacob","position":{"x":-1,"y":1}}]""")
+      client.expectMessage("""[{"name":"Jacob","position":{"x":-1,"y":-1}}]""")
 
-      client.sendMessage("""move {"x":-2,"y":2}""")
-      client.expectMessage("""[{"name":"Jacob","position":{"x":-2,"y":2}}]""")
+      client.expectMessage("""[{"name":"Jacob","position":{"x":-1,"y":0}}]""")
     }
   }
 
