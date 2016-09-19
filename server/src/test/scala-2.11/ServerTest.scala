@@ -1,5 +1,5 @@
 import akka.actor.Actor.Receive
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 
 import scala.concurrent.duration._
 import akka.util.ByteString
@@ -12,20 +12,45 @@ import org.scalatest.FunSuite
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives
+import spray.json.DefaultJsonProtocol
+
+import scala.collection.mutable
 /**
   * Created by kuba on 19.09.16.
   */
 class ServerTest extends FunSuite with Directives with ScalatestRouteTest {
 
   trait GameEvent
-  case class PlayerJoined(string: String) extends GameEvent
+  case class PlayerJoined(string: String,actorRef: ActorRef) extends GameEvent
   case class PlayerLeft(playerName: String) extends GameEvent
   case class PlayerMoveRequested(string:String) extends GameEvent
+  case class PlayerStatusChanged(players:Seq[Player]) extends GameEvent
+  case class Position(x:Int,y:Int)
+  case class Player(name: String,position: Position)
+  case class PlayerEndpoint(player: Player, actorRef: ActorRef)
+
 
   class GameAreaActor extends Actor {
+
+    val players = mutable.HashMap[String, PlayerEndpoint]()
+
     override def receive: Receive = {
-      case PlayerJoined(name) => TextMessage(s"Welcome $name")
-      case PlayerMoveRequested(direction) => TextMessage(s"so you want to move $direction, huh?")
+      case PlayerJoined(name,actor) => {
+        val player = Player(name, Position(0, 0))
+        players += (name -> PlayerEndpoint(player,actor))
+        notifyPlayersChanged
+      }
+      case PlayerLeft(name) => {
+        players -= name
+        notifyPlayersChanged
+      }
+      case PlayerMoveRequested(direction) => {
+        notifyPlayersChanged
+      }
+    }
+
+    def notifyPlayersChanged = {
+      players.values.foreach(playerEndpoint => playerEndpoint.actorRef ! PlayerStatusChanged(players.values.toList.map(_.player)))
     }
   }
 
@@ -34,19 +59,31 @@ class ServerTest extends FunSuite with Directives with ScalatestRouteTest {
     implicit val materializer = ActorMaterializer()
 
     val gameRoomActor = system.actorOf(Props(new GameAreaActor))
+    val actorSource = Source.actorRef(5,OverflowStrategy.dropNew)
 
-    def flow(playerName: String) : Flow[Message, Message, _] = Flow.fromGraph(GraphDSL.create() { implicit  builder => {
+    def flow(playerName: String) : Flow[Message, Message, _] = Flow.fromGraph(GraphDSL.create(actorSource) { implicit  builder=> actorSrc => {
       import GraphDSL.Implicits._
       val messageMapper = builder.add(Flow[Message].collect{
         case TextMessage.Strict(txt) => PlayerMoveRequested(txt)
       })
 
       val sink = Sink.actorRef[GameEvent](gameRoomActor,PlayerLeft(playerName))
-      val materialized = builder.materializedValue.map(x => PlayerJoined(playerName))
+      val materialized = builder.materializedValue.map(x => PlayerJoined(playerName,x))
       val merge = builder.add(Merge[GameEvent](2))
+      val gameEvetToMessageConverter = builder.add(Flow[GameEvent].collect {
+        case PlayerStatusChanged(players) => {
+          import spray.json._
+          import DefaultJsonProtocol._
+          implicit val positionFormat = DefaultJsonProtocol.jsonFormat2(Position.apply)
+          implicit val playerFormat = DefaultJsonProtocol.jsonFormat2(Player.apply)
+          TextMessage(players.toJson.toString)
+        }
+      })
       materialized ~> merge ~> sink
       messageMapper ~> merge
-      FlowShape(messageMapper.in,anotherFlow.out)
+
+      actorSrc ~> gameEvetToMessageConverter
+      FlowShape(messageMapper.in,gameEvetToMessageConverter.out)
     }})
 
     val route = get {
@@ -56,9 +93,9 @@ class ServerTest extends FunSuite with Directives with ScalatestRouteTest {
     val client = WSProbe()
     client.flow
     WS("/",client.flow) ~> route ~> check {
-      client.expectMessage("Welcome Jacob")
+      client.expectMessage("""[{"name":"Jacob","position":{"x":0,"y":0}}]""")
       client.sendMessage("up")
-      client.expectMessage("so you want to move up, huh?")
+      client.expectMessage("""[{"name":"Jacob","position":{"x":0,"y":1}}]""")
     }
   }
 
