@@ -1,5 +1,5 @@
-import akka.actor.ActorSystem
-import akka.http.scaladsl.testkit.{ScalatestRouteTest, WSProbe}
+import akka.actor.Actor.Receive
+import akka.actor.{Actor, ActorSystem, Props}
 
 import scala.concurrent.duration._
 import akka.util.ByteString
@@ -7,9 +7,8 @@ import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategy}
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
 import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage}
 import akka.http.scaladsl.server.Directives
-import akka.http.scaladsl.testkit.WSProbe
+import akka.http.scaladsl.testkit.{ScalatestRouteTest, WSProbe}
 import org.scalatest.FunSuite
-import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives
@@ -18,51 +17,48 @@ import akka.http.scaladsl.server.Directives
   */
 class ServerTest extends FunSuite with Directives with ScalatestRouteTest {
 
+  trait GameEvent
+  case class PlayerJoined(string: String) extends GameEvent
+  case class PlayerLeft(playerName: String) extends GameEvent
+  case class PlayerMoveRequested(string:String) extends GameEvent
+
+  class GameAreaActor extends Actor {
+    override def receive: Receive = {
+      case PlayerJoined(name) => TextMessage(s"Welcome $name")
+      case PlayerMoveRequested(direction) => TextMessage(s"so you want to move $direction, huh?")
+    }
+  }
+
   test("should be able to connect") {
-
-
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
+    val gameRoomActor = system.actorOf(Props(new GameAreaActor))
 
-//    val materializedActor  = Source.actorRef[Message](5,OverflowStrategy.fail)
-//    val graph : Flow[Message,Message,_] = Flow.fromGraph(GraphDSL.create(materializedActor) { implicit builder => actor =>
-//      import GraphDSL.Implicits._
-//
-//      val input = builder.add(Flow[Message].collect {
-//        case tm: TextMessage => tm
-//        case _ => TextMessage("created")
-//      })
-//      val output = builder.add(Flow[Message].collect {
-//        case tm: TextMessage => tm
-//        case _ => TextMessage("created")
-//      })
-//      val materialized = port2flow(builder.materializedValue)(builder).map(a => TextMessage("Connected"))
-//      materialized ~> input
-//
-//      FlowShape(input.in,output.out)
-//    })
-
-    val flow = Flow.fromGraph(GraphDSL.create() { implicit  builder => {
+    def flow(playerName: String) : Flow[Message, Message, _] = Flow.fromGraph(GraphDSL.create() { implicit  builder => {
       import GraphDSL.Implicits._
-      val flow = builder.add(Flow[Message].map( x => TextMessage("Hello " + x.asTextMessage.getStrictText)))
-      val materialized = port2flow(builder.materializedValue)(builder).map(x => TextMessage("connected"))
-      val merge = builder.add(Merge[Message](2))
-      materialized ~> merge
-      flow ~> merge
-      FlowShape(flow.in,merge.out)
+      val messageMapper = builder.add(Flow[Message].collect{
+        case TextMessage.Strict(txt) => PlayerMoveRequested(txt)
+      })
+
+      val sink = Sink.actorRef[GameEvent](gameRoomActor,PlayerLeft(playerName))
+      val materialized = builder.materializedValue.map(x => PlayerJoined(playerName))
+      val merge = builder.add(Merge[GameEvent](2))
+      materialized ~> merge ~> sink
+      messageMapper ~> merge
+      FlowShape(messageMapper.in,anotherFlow.out)
     }})
 
     val route = get {
-      handleWebSocketMessages(flow)
+      handleWebSocketMessages(flow("Jacob"))
     }
 
     val client = WSProbe()
     client.flow
     WS("/",client.flow) ~> route ~> check {
-      client.expectMessage("connected")
-      client.sendMessage("Peter")
-      client.expectMessage("Hello Peter")
+      client.expectMessage("Welcome Jacob")
+      client.sendMessage("up")
+      client.expectMessage("so you want to move up, huh?")
     }
   }
 
