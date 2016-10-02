@@ -7,10 +7,12 @@ Game Server and Client based on:
 
 ## Implementation process screen cast
 
-The project developed was video-captured and is available via youtube:
+The project development was video-captured and is available via youtube:
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/lex7xQPgzY8/0.jpg)]
+[![youtube](https://img.youtube.com/vi/lex7xQPgzY8/0.jpg)]
 (https://www.youtube.com/embed/videoseries?list=PLJyEZyYeXrpitII6rTxKebZwb_u5crmjM)
+
+It consist of 80 minutes of footage with commentary. 
 
 ## Running
 
@@ -20,6 +22,3 @@ sbt run
 cd ../client
 sbt run #Run this multiple times for multiple clients
 ```
-
-
-
