@@ -1,0 +1,11 @@
+language: scala
+scala:
+  - 2.11
+
+jdk:
+  - oraclejdk8
+
+env:
+  - TEST_DIR=server
+
+script: cd $TEST_DIR && sbt test

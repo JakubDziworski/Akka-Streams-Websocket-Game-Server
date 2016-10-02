@@ -1,5 +1,7 @@
 # Akka-Streams-Websocket-Game-Server
 
+[![Build Status](https://travis-ci.org/JakubDziworski/Akka-Streams-Websocket-Game-Server.svg?branch=master)](https://travis-ci.org/JakubDziworski/Akka-Streams-Websocket-Game-Server)
+
 Game Server and Client based on:
 * Scala
 * Akka Streams & Http
