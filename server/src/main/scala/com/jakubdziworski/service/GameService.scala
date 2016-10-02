@@ -10,7 +10,7 @@ import com.jakubdziworski.actor._
 /**
   * Created by kuba on 21.09.16.
   */
-class GameService(implicit val actorSystem: ActorSystem,implicit val actorMaterializer: ActorMaterializer) extends Directives {
+class GameService(implicit val actorSystem : ActorSystem, implicit  val actorMaterializer: ActorMaterializer) extends Directives {
 
   val websocketRoute = (get & parameter("playerName")){ playerName =>
     handleWebSocketMessages(flow(playerName))
@@ -34,10 +34,9 @@ class GameService(implicit val actorSystem: ActorSystem,implicit val actorMateri
         import DefaultJsonProtocol._
         implicit val positionFormat = jsonFormat2(Position)
         implicit val playerFormat = jsonFormat2(Player)
-        TextMessage(players.toJson.toString)
+        TextMessage(players.toList.toJson.toString)
       }
     })
-
 
     val gameAreaActorSink = Sink.actorRef[GameEvent](gameAreaActor,PlayerLeft(playerName))
 

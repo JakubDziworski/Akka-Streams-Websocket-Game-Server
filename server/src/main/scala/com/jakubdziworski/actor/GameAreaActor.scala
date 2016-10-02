@@ -1,10 +1,8 @@
 package com.jakubdziworski.actor
 
 import akka.actor.{Actor, ActorRef}
+import com.jakubdziworski.service.PositionCalculator
 
-/**
-  * Created by kuba on 21.09.16.
-  */
 
 trait GameEvent
 case class PlayerJoined(player: Player,actorRef: ActorRef) extends GameEvent
@@ -23,10 +21,12 @@ case class Position(x:Int,y:Int) {
 class GameAreaActor extends Actor {
 
   val players = collection.mutable.LinkedHashMap[String,PlayerWithActor]()
+  def takenPositions = players.values.map(_.player.position).toList
 
   override def receive: Receive = {
     case PlayerJoined(player,actor) => {
-      players += (player.name -> PlayerWithActor(player,actor))
+      val newPlayer = Player(player.name,PositionCalculator.findClosestAvailable(Position(0,0),takenPositions))
+      players += (player.name -> PlayerWithActor(newPlayer,actor))
       notifyPlayersChanged()
     }
     case PlayerLeft(playerName) => {
@@ -42,9 +42,12 @@ class GameAreaActor extends Actor {
       }
       val oldPlayerWithActor = players(playerName)
       val oldPlayer = oldPlayerWithActor.player
-      val actor = oldPlayerWithActor.actor
-      players(playerName) = PlayerWithActor(Player(playerName,oldPlayer.position + offset),actor)
-      notifyPlayersChanged()
+      val newPosition = oldPlayer.position + offset
+      if (!takenPositions.contains(newPosition)) {
+        val actor = oldPlayerWithActor.actor
+        players(playerName) = PlayerWithActor(Player(playerName,newPosition),actor)
+        notifyPlayersChanged()
+      }
     }
   }
 

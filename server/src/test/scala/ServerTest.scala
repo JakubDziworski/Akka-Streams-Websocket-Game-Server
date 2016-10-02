@@ -1,20 +1,11 @@
-import akka.actor.Actor.Receive
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import akka.http.scaladsl.model.ws.{Message, TextMessage}
-import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.testkit.{ScalatestRouteTest, WSProbe}
-import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategy}
-import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
-import com.jakubdziworski.service
+import com.jakubdziworski.service.GameService
 import org.scalatest.{FunSuite, Matchers}
 
-/**
-  * Created by kuba on 20.09.16.
-  */
-class ServiceSpec extends FunSuite with Matchers with ScalatestRouteTest {
+class ServerTest extends FunSuite with Matchers with ScalatestRouteTest {
 
   test("should create GameService") {
-    new service.GameService()
+    new GameService()
   }
 
   test("should be able to connect to the GameService websocket") {
@@ -30,7 +21,7 @@ class ServiceSpec extends FunSuite with Matchers with ScalatestRouteTest {
   }
 
   test("should register multiple players") {
-    val gameService = new service.GameService()
+    val gameService = new GameService()
     val johnClient = WSProbe()
     val andrewClient = WSProbe()
 
@@ -38,7 +29,7 @@ class ServiceSpec extends FunSuite with Matchers with ScalatestRouteTest {
       johnClient.expectMessage("[{\"name\":\"John\",\"position\":{\"x\":0,\"y\":0}}]")
     }
     WS(s"/?playerName=Andrew", andrewClient.flow) ~> gameService.websocketRoute ~> check {
-      andrewClient.expectMessage("[{\"name\":\"John\",\"position\":{\"x\":0,\"y\":0}},{\"name\":\"Andrew\",\"position\":{\"x\":0,\"y\":0}}]")
+      andrewClient.expectMessage("[{\"name\":\"John\",\"position\":{\"x\":0,\"y\":0}},{\"name\":\"Andrew\",\"position\":{\"x\":0,\"y\":1}}]")
     }
   }
 
@@ -65,9 +56,8 @@ class ServiceSpec extends FunSuite with Matchers with ScalatestRouteTest {
   }
 
   def assertWebsocket(playerName: String)(assertions:(WSProbe) => Unit) : Unit = {
-    val gameService = new service.GameService()
+    val gameService = new GameService()
     val wsClient = WSProbe()
     WS(s"/?playerName=$playerName", wsClient.flow) ~> gameService.websocketRoute ~> check(assertions(wsClient))
   }
 }
-

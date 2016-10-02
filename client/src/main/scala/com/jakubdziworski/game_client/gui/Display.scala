@@ -1,38 +1,24 @@
-import Direction.Direction
+package com.jakubdziworski.game_client.gui
 
-import scalafx.Includes._
-import scalafx.application.{JFXApp, Platform}
-import scalafx.scene.Scene
-import scalafx.scene.input.{KeyCode, KeyEvent}
+import akka.stream.scaladsl.Sink
+import com.jakubdziworski.game_client.domain.Player
+
+import scalafx.application.Platform
 import scalafx.scene.layout.{AnchorPane, StackPane}
 import scalafx.scene.paint.Color
 import scalafx.scene.shape.Circle
 import scalafx.scene.text.Text
 
-class GUI(movePlayerListener: (Direction) => Unit) extends JFXApp {
+class Display() {
   private val PlayerRadius = 100
   private val Dimensions = 6
   private val ScreenSize = PlayerRadius * Dimensions
-  private val panel = new AnchorPane {
+  val panel = new AnchorPane {
     minWidth = ScreenSize
     minHeight = ScreenSize
   }
 
-  stage = new JFXApp.PrimaryStage {
-    title.value = "Hello Stage"
-    scene = new Scene {
-      content = panel
-      onKeyPressed = (ev: KeyEvent) => ev.code match {
-        case KeyCode.Up => movePlayerListener(Direction.Up)
-        case KeyCode.Down => movePlayerListener(Direction.Down)
-        case KeyCode.Left => movePlayerListener(Direction.Left)
-        case KeyCode.Right => movePlayerListener(Direction.Right)
-        case _ =>
-      }
-    }
-  }
-
-  def displayPlayers(playerPositions: Seq[Player]): Unit = {
+  def sink = Sink.foreach[List[Player]] { playerPositions=>
     val playersShapes = playerPositions.map(player => {
       new StackPane {
         minWidth = ScreenSize
@@ -63,12 +49,4 @@ class GUI(movePlayerListener: (Direction) => Unit) extends JFXApp {
       panel.requestLayout()
     })
   }
-}
-
-object Direction extends Enumeration {
-  type Direction = Value
-  val Up = Value("up")
-  val Down = Value("down")
-  val Right = Value("right")
-  val Left = Value("left")
 }
