@@ -24,7 +24,7 @@ class GameService(implicit val actorSystem : ActorSystem, implicit  val actorMat
     val materialization = builder.materializedValue.map(playerActorRef => PlayerJoined(Player(playerName,Position(0,0)),playerActorRef))
     val merge = builder.add(Merge[GameEvent](2))
 
-    val messagesToGameEventsFlow = builder.add(Flow[Message].map {
+    val messagesToGameEventsFlow = builder.add(Flow[Message].collect {
       case TextMessage.Strict(direction) => PlayerMoveRequest(playerName,direction)
     })
 

@@ -11,7 +11,6 @@ import spray.json.DefaultJsonProtocol
 import spray.json._
 
 class Client(playerName: String)(implicit val actorSystem: ActorSystem, implicit val actorMaterializer: ActorMaterializer) extends DefaultJsonProtocol {
-
   implicit val positionFormat = jsonFormat2(Position)
   implicit val playerFormat = jsonFormat2(Player)
 

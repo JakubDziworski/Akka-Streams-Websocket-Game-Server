@@ -10,5 +10,6 @@ class KeyBoardHandler(keyboardEventsReceiver: ActorRef) {
     case KeyCode.Down => keyboardEventsReceiver ! "up"
     case KeyCode.Left => keyboardEventsReceiver ! "left"
     case KeyCode.Right => keyboardEventsReceiver ! "right"
+  	case _ =>
   }
 }

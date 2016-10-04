@@ -4,14 +4,19 @@
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
-import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import com.jakubdziworski.service.GameService
+import com.typesafe.config.ConfigFactory
 
 import scala.io.StdIn
 
 object Server {
+
+  object Config {
+    val config = ConfigFactory.defaultApplication()
+    val port = config.getInt("server.port")
+    val host = config.getString("server.host")
+  }
 
   def main(args: Array[String]) {
     implicit val system = ActorSystem()
@@ -19,8 +24,8 @@ object Server {
     implicit val executionContext = system.dispatcher
 
     val gameService = new GameService()
-    val bindingFuture = Http().bindAndHandle(gameService.websocketRoute, "localhost", 8080)
-    println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+    val bindingFuture = Http().bindAndHandle(gameService.websocketRoute, Config.host,Config.port)
+    println(s"Server online at ${Config.host}:${Config.port}\nPress RETURN to stop...")
     StdIn.readLine()
     bindingFuture
       .flatMap(_.unbind())
