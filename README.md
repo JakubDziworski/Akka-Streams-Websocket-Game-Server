@@ -11,7 +11,7 @@ Game Server and Client based on:
 
 The project development was video-captured and is available via youtube:
 
-![youtube](https://img.youtube.com/vi/lex7xQPgzY8/0.jpg)
+[![youtube](https://img.youtube.com/vi/lex7xQPgzY8/0.jpg)]
 (https://www.youtube.com/embed/videoseries?list=PLJyEZyYeXrpitII6rTxKebZwb_u5crmjM)
 
 It consist of 80 minutes of footage with commentary. 
