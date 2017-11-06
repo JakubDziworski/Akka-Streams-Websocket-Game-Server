@@ -1,8 +1,10 @@
 import akka.http.scaladsl.testkit.{ScalatestRouteTest, WSProbe}
 import com.jakubdziworski.service.GameService
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
 
-class ServerTest extends FunSuite with Matchers with ScalatestRouteTest {
+class ServerTest extends FunSuite with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
+
+  override def afterAll(): Unit = cleanUp()
 
   test("should create GameService") {
     new GameService()
